@@ -1,0 +1,128 @@
+/*
+ *  CMSIS Pack Debug Access Sequence Log
+ *  File        : D:\geoff\Documents\OneDrive - he2b.be\Ecole 2019 - 2020\Q2\Bureau_Etude\1803 - Banc d_essais Moteur\BANC_ESSAI_ELECTRONIQUE\Microcontroleur\STM32_Programs_keil\CubeMx\TestBenchISIB_Keil\MDK-ARM\TestBenchISIB_Keil_Sequences_0000.log
+ *  Created     : 17:35:36 (21/02/2020)
+ *  Device      : STM32F103C8
+ *  PDSC File   : C:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Keil.STM32F1xx_DFP.pdsc
+ *  Config File : D:\geoff\Documents\OneDrive - he2b.be\Ecole 2019 - 2020\Q2\Bureau_Etude\1803 - Banc d_essais Moteur\BANC_ESSAI_ELECTRONIQUE\Microcontroleur\STM32_Programs_keil\CubeMx\TestBenchISIB_Keil\MDK-ARM\DebugConfig\TestBenchISIB_Keil_STM32F103C8_1.0.0.dbgconf
+ *
+ */
+
+[17:35:36.403]  **********  Sequence "DebugDeviceUnlock"  (Context="Connect", Pname="", info="")
+[17:35:36.403]  
+[17:35:36.404]  <debugvars>
+[17:35:36.406]    __protocol=0x00010002   (Protocol="SWD", SWJ-DP="True")
+[17:35:36.407]    __connection=0x00000202   (Connection Type="Flash", Reset Type="System Reset")
+[17:35:36.409]    __dp=0x00000000
+[17:35:36.410]    __ap=0x00000000
+[17:35:36.411]    __traceout=0x00000000   (Trace Disabled)
+[17:35:36.412]    __errorcontrol=0x00000000   (Skip Errors="False")
+[17:35:36.414]    __FlashAddr=0x00000000
+[17:35:36.415]    __FlashLen=0x00000000
+[17:35:36.416]    __FlashArg=0x00000000
+[17:35:36.417]    __FlashOp=0x00000000
+[17:35:36.418]    __Result=0x00000000
+[17:35:36.419]    DbgMCU_CR=0x00000007
+[17:35:36.420]  </debugvars>
+[17:35:36.421]  
+[17:35:36.423]  <sequence name="DebugDeviceUnlock" Pname="" disable="false" info="">
+[17:35:36.424]    <block atomic="false" info="">
+[17:35:36.425]      Sequence("CheckID");
+[17:35:36.426]        <sequence name="CheckID" Pname="" disable="false" info="">
+[17:35:36.427]          <block atomic="false" info="">
+[17:35:36.429]            __var pidr1 = 0;
+[17:35:36.430]              // -> [pidr1 <= 0x00000000]
+[17:35:36.430]            __var pidr2 = 0;
+[17:35:36.432]              // -> [pidr2 <= 0x00000000]
+[17:35:36.432]            __var jep106id = 0;
+[17:35:36.433]              // -> [jep106id <= 0x00000000]
+[17:35:36.434]            __var ROMTableBase = 0;
+[17:35:36.435]              // -> [ROMTableBase <= 0x00000000]
+[17:35:36.436]            __ap = 0;      // AHB-AP
+[17:35:36.436]              // -> [__ap <= 0x00000000]
+[17:35:36.437]            ROMTableBase = ReadAP(0xF8) & ~0x3;
+[17:35:36.442]              // -> [ReadAP(0x000000F8) => 0xE00FF003] (__dp=0, __ap=0)
+[17:35:36.443]              // -> [ROMTableBase <= 0xE00FF000]
+[17:35:36.444]            pidr1 = Read32(ROMTableBase + 0x0FE4);
+[17:35:36.451]              // -> [Read32(0xE00FFFE4) => 0x00000052] (__dp=0, __ap=0)
+[17:35:36.452]              // -> [pidr1 <= 0x00000052]
+[17:35:36.453]            pidr2 = Read32(ROMTableBase + 0x0FE8);
+[17:35:36.458]              // -> [Read32(0xE00FFFE8) => 0x00000005] (__dp=0, __ap=0)
+[17:35:36.460]              // -> [pidr2 <= 0x00000005]
+[17:35:36.461]            jep106id = ((pidr2 & 0x7) << 4 ) | ((pidr1 >> 4) & 0xF);
+[17:35:36.462]              // -> [jep106id <= 0x00000055]
+[17:35:36.463]          </block>
+[17:35:36.465]          <control if="jep106id != 0x20" while="" timeout="0" info="">
+[17:35:36.466]            // if-block "jep106id != 0x20"
+[17:35:36.468]              // =>  TRUE
+[17:35:36.469]            <block atomic="false" info="">
+[17:35:36.470]              Query(0, "Not a genuine ST Device! Abort connection", 1);
+[17:35:36.471]                // Query(Query_Ok, "Not a genuine ST Device! Abort connection", OK)
+[17:35:37.399]                // => OK
+[17:35:37.401]              Message(2, "Not a genuine ST Device! Abort connection.");
+[17:35:37.403]            </block>
+[17:35:37.404]            // end if-block "jep106id != 0x20"
+[17:35:37.405]          </control>
+[17:35:37.406]        </sequence>
+[17:35:37.407]    </block>
+[17:35:37.407]  </sequence>
+[17:35:37.408]  
+[17:35:54.596]  **********  Sequence "DebugDeviceUnlock"  (Context="Connect", Pname="", info="")
+[17:35:54.596]  
+[17:35:54.598]  <debugvars>
+[17:35:54.600]    __protocol=0x00010002   (Protocol="SWD", SWJ-DP="True")
+[17:35:54.602]    __connection=0x00000202   (Connection Type="Flash", Reset Type="System Reset")
+[17:35:54.603]    __dp=0x00000000
+[17:35:54.604]    __ap=0x00000000
+[17:35:54.605]    __traceout=0x00000000   (Trace Disabled)
+[17:35:54.607]    __errorcontrol=0x00000000   (Skip Errors="False")
+[17:35:54.608]    __FlashAddr=0x00000000
+[17:35:54.609]    __FlashLen=0x00000000
+[17:35:54.611]    __FlashArg=0x00000000
+[17:35:54.612]    __FlashOp=0x00000000
+[17:35:54.614]    __Result=0x00000000
+[17:35:54.615]    DbgMCU_CR=0x00000007
+[17:35:54.616]  </debugvars>
+[17:35:54.617]  
+[17:35:54.618]  <sequence name="DebugDeviceUnlock" Pname="" disable="false" info="">
+[17:35:54.620]    <block atomic="false" info="">
+[17:35:54.621]      Sequence("CheckID");
+[17:35:54.622]        <sequence name="CheckID" Pname="" disable="false" info="">
+[17:35:54.623]          <block atomic="false" info="">
+[17:35:54.625]            __var pidr1 = 0;
+[17:35:54.626]              // -> [pidr1 <= 0x00000000]
+[17:35:54.627]            __var pidr2 = 0;
+[17:35:54.628]              // -> [pidr2 <= 0x00000000]
+[17:35:54.628]            __var jep106id = 0;
+[17:35:54.630]              // -> [jep106id <= 0x00000000]
+[17:35:54.630]            __var ROMTableBase = 0;
+[17:35:54.631]              // -> [ROMTableBase <= 0x00000000]
+[17:35:54.633]            __ap = 0;      // AHB-AP
+[17:35:54.634]              // -> [__ap <= 0x00000000]
+[17:35:54.634]            ROMTableBase = ReadAP(0xF8) & ~0x3;
+[17:35:54.639]              // -> [ReadAP(0x000000F8) => 0xE00FF003] (__dp=0, __ap=0)
+[17:35:54.639]              // -> [ROMTableBase <= 0xE00FF000]
+[17:35:54.640]            pidr1 = Read32(ROMTableBase + 0x0FE4);
+[17:35:54.647]              // -> [Read32(0xE00FFFE4) => 0x00000052] (__dp=0, __ap=0)
+[17:35:54.648]              // -> [pidr1 <= 0x00000052]
+[17:35:54.649]            pidr2 = Read32(ROMTableBase + 0x0FE8);
+[17:35:54.655]              // -> [Read32(0xE00FFFE8) => 0x00000005] (__dp=0, __ap=0)
+[17:35:54.656]              // -> [pidr2 <= 0x00000005]
+[17:35:54.657]            jep106id = ((pidr2 & 0x7) << 4 ) | ((pidr1 >> 4) & 0xF);
+[17:35:54.658]              // -> [jep106id <= 0x00000055]
+[17:35:54.660]          </block>
+[17:35:54.661]          <control if="jep106id != 0x20" while="" timeout="0" info="">
+[17:35:54.662]            // if-block "jep106id != 0x20"
+[17:35:54.663]              // =>  TRUE
+[17:35:54.664]            <block atomic="false" info="">
+[17:35:54.665]              Query(0, "Not a genuine ST Device! Abort connection", 1);
+[17:35:54.666]                // Query(Query_Ok, "Not a genuine ST Device! Abort connection", OK)
+[17:35:55.495]                // => OK
+[17:35:55.496]              Message(2, "Not a genuine ST Device! Abort connection.");
+[17:35:55.498]            </block>
+[17:35:55.499]            // end if-block "jep106id != 0x20"
+[17:35:55.499]          </control>
+[17:35:55.500]        </sequence>
+[17:35:55.501]    </block>
+[17:35:55.502]  </sequence>
+[17:35:55.502]  
