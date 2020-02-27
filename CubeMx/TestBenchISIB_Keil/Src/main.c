@@ -32,6 +32,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "types.h"
+#include "Register.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,12 +54,10 @@
 /* USER CODE BEGIN PV */
 uint16_t ADC_buffer[6], adc[6], nmoyenne;
 uint32_t moyenne[6];
-T_SPI_FRAME MessageToSend;
-union Measures_telemetries Measures_TM;
 
-uint8_t buffer_SPI_TX[16] = {0x35,2,0x80,0x24,0x1,0x2,0x1,0x2,0x1,0x2,0x1,0x2,0x1,0x2,0x1,0x2};
+uint8_t buffer_SPI_TX[16];
 uint8_t buffer_SPI_RX[16];
-
+uint16_t Table_Tm_Reg[C_TM_TABLE_SIZE];
 
 /* USER CODE END PV */
 
@@ -70,6 +69,20 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void Refresh_TM()
+{
+	Table_Tm_Reg[C_TM_CR_MOT] 	= 	adc[C_ADCTAB_LOADCEL] - adc[C_ADCTAB_165REF];	
+	Table_Tm_Reg[C_TM_U_MOT] 		= 	adc[C_ADCTAB_UMOTOR];
+	Table_Tm_Reg[C_TM_I_MOT] 		= 	adc[C_ADCTAB_IMOTOR];
+	Table_Tm_Reg[C_TM_U_BRAKE] 	= 	adc[C_ADCTAB_UBRAKE];
+	Table_Tm_Reg[C_TM_I_BRAKE] 	= 	adc[C_ADCTAB_IBRAKE];
+	
+	
+}
+
+
+
 
 #define MAX_PWM 65535	//Vitesse max robot
 float C = 134.0;//136		//Consigne
@@ -83,7 +96,7 @@ void P_Loop_Motor()
 	float E = 0.0;	//Erreur
 	float u = 0.0;	
 	
-	M = Measures_TM.strct.Umotor;//Mesure
+	M = Table_Tm_Reg[C_TM_U_MOT];//Mesure
 	
 	E=C-M;			//Calcul de l'erreur
 	u = E*K;	//Calcul de la commande
@@ -111,7 +124,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	{
 		 moyenne[i] += ADC_buffer[i];  // store the values in adc[]
 	}
-	++nmoyenne;
+	nmoyenne++;
 	
 	if(nmoyenne==10)
 	{
@@ -121,44 +134,38 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 			moyenne[i] = 0;
 		}
 		nmoyenne = 0;
-		Measures_TM.strct.ULoadCell = adc[0] - adc[1];
-		Measures_TM.strct.Umotor = adc[2];
-		Measures_TM.strct.Imotor = adc[3];
-		Measures_TM.strct.Ubrake = adc[4];
-		Measures_TM.strct.Ibrake = adc[5];
-		Measures_TM.strct.Speed = adc[5];
 	}
 }
 
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	
-	buffer_SPI_TX[0] = MessageToSend.fr.SOF;
-	buffer_SPI_TX[1] = MessageToSend.fr.Length;
-	buffer_SPI_TX[2] = MessageToSend.fr.OD_INDEX;
-	for(int i = 0;i<15;i++)
+	uint16_t value;
+	uint8_t type = buffer_SPI_RX[0];
+	if(type == 0x80)
 	{
-		buffer_SPI_TX[i+3] = ((uint8_t*)(Measures_TM.measures))[i];
+		value = buffer_SPI_RX[1];
+		buffer_SPI_TX[1] = Table_Tm_Reg[value];
+		buffer_SPI_TX[2] = Table_Tm_Reg[value]>>8;
 	}
-	buffer_SPI_TX[15] = MessageToSend.fr.EOF;
-	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 16);
-	//HAL_SPI_Receive(&hspi2,receiveData,16,100);
-
-	//HAL_SPI_Transmit(&hspi2,array,2,100);	
-	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 16);
+	else if(type == 0X20)
+	{
+		if(buffer_SPI_RX[1] == 2)
+		{
+			value = (buffer_SPI_RX[2]<<8) + buffer_SPI_RX[3];
+			C = (float)(value);
+		}
+		//TC DISPATCHER
+	}
+	//HAL_SPI_TransmitReceive_IT(&hspi2,buffer_SPI_TX,buffer_SPI_RX,16);
+	//HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 16);
+	//HAL_SPI_Transmit_IT(&hspi2,buffer_SPI_TX,2);	
+	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);	
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	buffer_SPI_TX[0] = MessageToSend.fr.SOF;
-	buffer_SPI_TX[1] = MessageToSend.fr.Length;
-	buffer_SPI_TX[2] = MessageToSend.fr.OD_INDEX;
-	for(int i = 0;i<15;i++)
-	{
-		buffer_SPI_TX[i+3] = ((uint8_t*)(Measures_TM.measures))[i];
-	}
-	buffer_SPI_TX[15] = MessageToSend.fr.EOF;
-	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 16);
+	
+	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 }
 
 /* USER CODE END 0 */
@@ -204,7 +211,7 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 	
-	int N;
+	
 	
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); //Start the PWM
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4); //Start the PWM
@@ -216,7 +223,8 @@ int main(void)
 	htim3.Instance->CCR1 = 0; //50% duty cycle
 	htim3.Instance->CCR2 = 0; //25% duty cycle
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC_buffer, 6);
-	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 16);
+	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
+	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
 	//HAL_SPI_TransmitReceive_IT(&hspi2,buffer_SPI_TX,buffer_SPI_RX,16);
 	//HAL_SPI_TransmitReceive_DMA(&hspi2,buffer_SPI_TX,buffer_SPI_RX,16);
   /* USER CODE END 2 */
@@ -225,50 +233,13 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  float ref, ref3, value, realvaluemes;
-	ref3 = (float)(adc[2])*3.3/4095;
-	ref = (float)(adc[1])*3.3/4095;
-	value = (float)(adc[0])*3.3/4095;
-	realvaluemes = (float)(value-ref)/0.056;
-	N=3;
-	
-	MessageToSend.fr.SOF = 0XC5;
-	MessageToSend.fr.Length = 16;
-	MessageToSend.fr.OD_INDEX = 0X80;
-	MessageToSend.fr.EOF		=  0XFF;
-	MessageToSend.fr.data 	= (uint8_t*)(Measures_TM.measures);
-	
+ 
+
 	while (1)
   {
-		//uint8_t _transmitter = (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12));
-		/*if (!_transmitter)
-		{
-				buffer_SPI_TX[0] = MessageToSend.fr.SOF;
-				buffer_SPI_TX[1] = MessageToSend.fr.Length;
-				buffer_SPI_TX[2] = MessageToSend.fr.OD_INDEX;
-				for(int i = 0;i<15;i++)
-				{
-					buffer_SPI_TX[i+3] = ((uint8_t*)(Measures_TM.measures))[i];
-				}
-				buffer_SPI_TX[15] = MessageToSend.fr.EOF;
-				
-				HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX , 16);
-		}
-		else
-		{
-			 HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 16);
-		}*/
+		Refresh_TM();
 		P_Loop_Motor();
 		
-		
-		//htim3.Instance->CCR1 =10000;
-		
-		/*for(int i = 0; i<0xFFFF;i+=10)
-		{
-			htim3.Instance->CCR1 =i;
-			HAL_Delay(1);
-			//HAL_SPI_Receive_IT(&hspi2,receiveData,1);
-		}*/
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

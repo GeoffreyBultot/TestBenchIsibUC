@@ -11,6 +11,7 @@
 "testbenchisib_keil\usb.o"
 "testbenchisib_keil\stm32f1xx_it.o"
 "testbenchisib_keil\stm32f1xx_hal_msp.o"
+"testbenchisib_keil\register.o"
 "testbenchisib_keil\stm32f1xx_hal_gpio_ex.o"
 "testbenchisib_keil\stm32f1xx_hal_adc.o"
 "testbenchisib_keil\stm32f1xx_hal_adc_ex.o"

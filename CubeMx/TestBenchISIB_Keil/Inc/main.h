@@ -58,6 +58,18 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define ADC_VREF_Pin GPIO_PIN_0
+#define ADC_VREF_GPIO_Port GPIOA
+#define ADC_LOAD_CELL_Pin GPIO_PIN_1
+#define ADC_LOAD_CELL_GPIO_Port GPIOA
+#define ADC_U_MOTOR_Pin GPIO_PIN_2
+#define ADC_U_MOTOR_GPIO_Port GPIOA
+#define ADC_I_MOTOR_Pin GPIO_PIN_3
+#define ADC_I_MOTOR_GPIO_Port GPIOA
+#define ADC_U_BRAKE_Pin GPIO_PIN_4
+#define ADC_U_BRAKE_GPIO_Port GPIOA
+#define ADC_I_BRAKE_Pin GPIO_PIN_5
+#define ADC_I_BRAKE_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */

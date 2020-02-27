@@ -43,3 +43,5 @@ testbenchisib_keil\main.o: ../Inc/usart.h
 testbenchisib_keil\main.o: ../Inc/usb.h
 testbenchisib_keil\main.o: ../Inc/gpio.h
 testbenchisib_keil\main.o: ../Src/types.h
+testbenchisib_keil\main.o: ../Src/Register.h
+testbenchisib_keil\main.o: ../Src/Module_Defines.h
