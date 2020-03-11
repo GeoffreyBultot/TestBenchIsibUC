@@ -29,7 +29,6 @@ testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm
 testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h
 testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
-testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_usart.h
 testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h
 testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h
 testbenchisib_keil\stm32f1xx_hal_exti.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h

@@ -30,7 +30,6 @@ testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pwr
 testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_spi.h
 testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim.h
 testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_tim_ex.h
-testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_usart.h
 testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd.h
 testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_ll_usb.h
 testbenchisib_keil\main.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_pcd_ex.h
@@ -39,7 +38,6 @@ testbenchisib_keil\main.o: ../Inc/dma.h
 testbenchisib_keil\main.o: ../Inc/i2c.h
 testbenchisib_keil\main.o: ../Inc/spi.h
 testbenchisib_keil\main.o: ../Inc/tim.h
-testbenchisib_keil\main.o: ../Inc/usart.h
 testbenchisib_keil\main.o: ../Inc/usb.h
 testbenchisib_keil\main.o: ../Inc/gpio.h
 testbenchisib_keil\main.o: ../Src/types.h

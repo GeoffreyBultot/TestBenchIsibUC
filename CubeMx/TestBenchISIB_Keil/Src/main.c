@@ -25,7 +25,6 @@
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
-#include "usart.h"
 #include "usb.h"
 #include "gpio.h"
 
@@ -59,6 +58,14 @@ uint8_t buffer_SPI_TX[16];
 uint8_t buffer_SPI_RX[16];
 uint16_t Table_Tm_Reg[C_TM_TABLE_SIZE];
 
+/** @brief Saved Local CMD Count */
+uint16_t Vi_Last_Cmd_Count;
+
+/** @brief TELECOMMAND Table register */
+__attribute__((section (".registers"))) volatile uint16_t Table_Tc_Reg[C_TC_TABLE_SIZE];
+
+//uint16_t Table_Tc_Reg[C_TC_TABLE_SIZE];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,6 +76,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+int counter_speed;
 
 void Refresh_TM()
 {
@@ -77,19 +85,15 @@ void Refresh_TM()
 	Table_Tm_Reg[C_TM_I_MOT] 		= 	adc[C_ADCTAB_IMOTOR];
 	Table_Tm_Reg[C_TM_U_BRAKE] 	= 	adc[C_ADCTAB_UBRAKE];
 	Table_Tm_Reg[C_TM_I_BRAKE] 	= 	adc[C_ADCTAB_IBRAKE];
-	
-	
+	Table_Tm_Reg[C_TM_SP_MOT]		=		counter_speed;
 }
 
+#define MAX_PWM 0xfff-10//65535	//Vitesse max robot
 
-
-
-#define MAX_PWM 65535	//Vitesse max robot
-float C = 134.0;//136		//Consigne
 #define H 75		//Fréquence ech en mS
-float K = 1000;		//Gain proportionnel
+float K = 100;		//Gain proportionnel
 
-
+/*
 void P_Loop_Motor()
 {
 	float M = 0.0;
@@ -99,22 +103,90 @@ void P_Loop_Motor()
 	M = Table_Tm_Reg[C_TM_U_MOT];//Mesure
 	
 	E=C-M;			//Calcul de l'erreur
-	u = E*K;	//Calcul de la commande
+	if(E>MAX_PWM/K)
+		u = MAX_PWM;
+	else
+		u = E*K;	//Calcul de la commande
 	
 	if(u>MAX_PWM)		//commande est trop grande 
 	{//PWM max
-		htim3.Instance->CCR1 = MAX_PWM;
+		htim1.Instance->CCR1 = MAX_PWM;
 	}
 	else if(u<0)
 	{
-		htim3.Instance->CCR1 = 0;
+		htim1.Instance->CCR1 = 0;//MAX_PWM+u;
 	}
 	else
 	{//Si on calcule une plage de vitesse acceptable, on donne
-	 //Cette vitesse au robot.
-		htim3.Instance->CCR1 = u;
+	 //Cette vitesse au moteur.
+		htim1.Instance->CCR1 = MAX_PWM;
 	}
 }
+*/
+
+float C = 136.0;//136		//Consigne
+
+#define MAX_PWM 0xfff-10//65535	//Vitesse max robot
+#define H_PI 0.5		//Periode ech en mS
+float Kp_PI= 20.0;		//Gain proportionnel
+float Ki_PI= 0.5;		//Gain proportionnel
+
+#define B0 Kp_PI*(H_PI/(2*Ki_PI)+1)
+#define B1 Kp_PI*(H_PI/(2*Ki_PI)-1)
+
+float E_before_PI = 0;	//Erreur précedente
+
+void PI_Loop_Motor()
+{
+	float M = 0.0;
+	float E = 0.0;	//Erreur
+	float u = 0.0;	
+	
+	M = Table_Tm_Reg[C_TM_U_MOT];//Mesure
+	
+	E=C-M;			//Calcul de l'erreur
+	
+	u = u + B0*E + B1*E_before_PI;	//Calcul de la commande
+	E_before_PI = E;
+	
+	if(u>MAX_PWM)		//commande est trop grande 
+	{//PWM max
+		htim1.Instance->CCR1 = MAX_PWM;
+	}
+	else if(u<0)
+	{
+		htim1.Instance->CCR1 = 0;//MAX_PWM+u;
+	}
+	else
+	{//Si on calcule une plage de vitesse acceptable, on donne
+	 //Cette vitesse au moteur.
+		htim1.Instance->CCR1 = u;
+	}
+}
+
+int tmp_counter_speed;
+
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if(htim->Instance == TIM2)
+	{
+		for(int i =0;i<2000;i++);
+		counter_speed=tmp_counter_speed;
+		tmp_counter_speed=0;
+	}
+	else if(htim->Instance == TIM1)
+	{
+		PI_Loop_Motor();
+	}
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	tmp_counter_speed++;
+}
+
+
+
 
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
@@ -126,11 +198,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	}
 	nmoyenne++;
 	
-	if(nmoyenne==10)
+	if(nmoyenne==100)
 	{
 		for (i =0; i<6; i++)
 		{
-			adc[i] = moyenne[i]/10;  // store the values in adc[]
+			adc[i] = moyenne[i]/100;  // store the values in adc[]
 			moyenne[i] = 0;
 		}
 		nmoyenne = 0;
@@ -148,23 +220,62 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		buffer_SPI_TX[2] = Table_Tm_Reg[value]>>8;
 	}
 	else if(type == 0X20)
-	{
-		if(buffer_SPI_RX[1] == 2)
-		{
-			value = (buffer_SPI_RX[2]<<8) + buffer_SPI_RX[3];
-			C = (float)(value);
-		}
+	{/** TELECOMMAND Table register ID */
+		
+		Table_Tc_Reg[C_TC_CMD_COUNT_ID] = (1+Vi_Last_Cmd_Count);
+		Table_Tc_Reg[C_TC_CMD_ID] 		= (buffer_SPI_RX [1]);
+		Table_Tc_Reg[C_TC_PARAM_1_ID] = (buffer_SPI_RX[2]<<8) + buffer_SPI_RX[3];
+		Table_Tc_Reg[C_TC_PARAM_2_ID] = (buffer_SPI_RX[4]<<8) + buffer_SPI_RX[5];
 		//TC DISPATCHER
 	}
-	//HAL_SPI_TransmitReceive_IT(&hspi2,buffer_SPI_TX,buffer_SPI_RX,16);
-	//HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 16);
-	//HAL_SPI_Transmit_IT(&hspi2,buffer_SPI_TX,2);	
+	
 	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);	
 }
 
+
+uint8_t Is_New_Command_Received(void)
+{
+	uint8_t Vb_Command_Received;
+	Vb_Command_Received = 0;
+
+	volatile uint16_t New_Cmd_Cnt;	/**< Temporary Variable used to store the CMD_COUNT register, read only once */
+
+	/** Read the CMD_CNT register */
+	New_Cmd_Cnt = Table_Tc_Reg[C_TC_CMD_COUNT_ID];
+	
+	if ((New_Cmd_Cnt - Vi_Last_Cmd_Count) == 1)
+	{	/** Read the TC and take it into account */
+		/** Return TRUE */
+		Vb_Command_Received = 1;
+	}
+	/** Save the last Cmd count for next check */
+	Vi_Last_Cmd_Count = New_Cmd_Cnt;
+
+	return Vb_Command_Received;
+}
+
+void TC_Dispatcher(const uint8_t p_Cmd_Id, const uint16_t p_Param1, const uint16_t p_Param2)
+{
+	switch(p_Cmd_Id)
+	{
+		case C_TC_MAN_SET_U_MOT :
+			C = p_Param1;
+			break;
+		case C_TC_MAN_SET_I_MOT :
+			C = p_Param1;
+			break;
+		case C_TC_MAN_SET_SP_MOT :
+			C = p_Param1;
+			break;
+		case C_TC_MAN_SET_CR_MOT :
+			C = p_Param1;
+			break;
+	}
+}
+	
+
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 {
-	
 	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 }
 
@@ -177,8 +288,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	
-
   /* USER CODE END 1 */
   
 
@@ -188,14 +297,12 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -205,28 +312,47 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_PCD_Init();
   MX_TIM3_Init();
-  MX_USART1_Init();
   MX_TIM4_Init();
   MX_SPI2_Init();
   MX_TIM1_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
 	
+	htim1.Instance->CCR1 = 0; //25% duty cycle
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); //Start the PWM
+	HAL_TIM_Base_Start_IT(&htim3);
+	HAL_TIM_Base_Start_IT(&htim2);
+	//HAL_TIMEx_PWMN_Start(&htim1,TIM_CHANNEL_1);
 	
 	
-	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); //Start the PWM
-	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4); //Start the PWM
 	htim4.Instance->CCR3 = 0; //50% duty cycle
 	htim4.Instance->CCR4 = 0; //25% duty cycle
+	//HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); //Start the PWM
+	//HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4); //Start the PWM
 	
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); //Start the PWM
-	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); //Start the PWM
-	htim3.Instance->CCR1 = 0; //50% duty cycle
-	htim3.Instance->CCR2 = 0; //25% duty cycle
+	//htim3.Instance->CCR1 = 1000; //50% duty cycle
+	//htim3.Instance->CCR2 = 100; //25% duty cycle
+	
+	//HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); //Start the PWM
+	/*HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); //Start the PWM
+	*/
+	
+	/*
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_7|GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_7,GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA,GPIO_PIN_8,GPIO_PIN_RESET);
+	*/
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC_buffer, 6);
 	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
-	//HAL_SPI_TransmitReceive_IT(&hspi2,buffer_SPI_TX,buffer_SPI_RX,16);
-	//HAL_SPI_TransmitReceive_DMA(&hspi2,buffer_SPI_TX,buffer_SPI_RX,16);
+	
+	
   /* USER CODE END 2 */
  
  
@@ -234,11 +360,27 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
  
-
 	while (1)
   {
+		//P_Loop_Motor();
+		//PI_Loop_Motor();
+		
 		Refresh_TM();
-		P_Loop_Motor();
+		
+		if (Is_New_Command_Received())
+		{
+			/** - Call TC Dispatcher to treat the command, with associated Parameter */
+			TC_Dispatcher(Table_Tc_Reg[C_TC_CMD_ID], Table_Tc_Reg[C_TC_PARAM_1_ID],Table_Tc_Reg[C_TC_PARAM_2_ID]);
+		}
+		
+		/*
+		if(HAL_GPIO_ReadPin(GPIOA,6))
+		{
+		}*/
+		
+		/*HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_8);
+		HAL_GPIO_TogglePin(GPIOA,GPIO_PIN_7);*/
+
 		
     /* USER CODE END WHILE */
 

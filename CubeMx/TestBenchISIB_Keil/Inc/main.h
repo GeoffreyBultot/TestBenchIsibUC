@@ -70,6 +70,8 @@ void Error_Handler(void);
 #define ADC_U_BRAKE_GPIO_Port GPIOA
 #define ADC_I_BRAKE_Pin GPIO_PIN_5
 #define ADC_I_BRAKE_GPIO_Port GPIOA
+#define INVERT_PWM_MOT_Pin GPIO_PIN_1
+#define INVERT_PWM_MOT_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
