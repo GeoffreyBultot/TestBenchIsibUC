@@ -20,12 +20,10 @@
 #define C_TM_PWM_BRAKE	8
 
 /** ADC MEASURES Table IDX*/
-#define C_ADCTAB_LOADCEL	0
-#define C_ADCTAB_165REF		1
-#define C_ADCTAB_UMOTOR		2
-#define C_ADCTAB_IMOTOR		3
-#define C_ADCTAB_UBRAKE		4
-#define C_ADCTAB_IBRAKE		5
+#define C_ADCTAB_UMOTOR		0
+#define C_ADCTAB_IMOTOR		1
+#define C_ADCTAB_UBRAKE		2
+#define C_ADCTAB_IBRAKE		3
 
 /** TELECOMMAND Table register ID */
 #define C_TC_CMD_COUNT_ID		0
