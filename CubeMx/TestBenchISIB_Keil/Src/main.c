@@ -203,7 +203,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 		HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 }
 
-
+/*
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if( (buffer_UART_RX[0] == 0XC5) && (buffer_UART_RX[1] == 0X08) && (buffer_UART_RX[7] == 0XC5) )
@@ -222,6 +222,21 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	HAL_UART_Receive_IT(&huart1,buffer_UART_RX,8);
 	//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
+}*/
+
+void get_ATMega_Infos()
+{
+	HAL_UART_Transmit(&huart1,buffer_UART_TX,8,1);
+	HAL_UART_Receive(&huart1,buffer_UART_RX,8,20);
+	if( (buffer_UART_RX[0] == 0XC5) && (buffer_UART_RX[1] == 0X08) && (buffer_UART_RX[7] == 0XC5) )
+	{
+		couple_measure 	=	(buffer_UART_RX[2])<<8;
+		couple_measure += (buffer_UART_RX[3]);
+		counter_speed 	= (buffer_UART_RX[4])<<16;
+		counter_speed  += (buffer_UART_RX[5])<<8;
+		counter_speed  += (buffer_UART_RX[6]);
+		//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
+	}
 }
 
 uint8_t Is_New_Command_Received(void)
@@ -315,8 +330,8 @@ int main(void)
 	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
 	
-	HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
-	HAL_UART_Receive_IT(&huart1,buffer_UART_RX,8);
+	//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
+	//HAL_UART_Receive_IT(&huart1,buffer_UART_RX,8);
 	//HAL_TIM_Base_Start_IT(&htim2);
 	//HAL_TIM_Base_Init(&htim2);
 	
@@ -329,7 +344,7 @@ int main(void)
 	while (1)
   {		
 		Refresh_TM();
-		
+		get_ATMega_Infos();
 		if (Is_New_Command_Received())
 		{
 			/** - Call TC Dispatcher to treat the command, with associated Parameter */
