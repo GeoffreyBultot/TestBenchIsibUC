@@ -20,6 +20,12 @@
 #define C_TM_PWM_BRAKE	8
 
 /** ADC MEASURES Table IDX*/
+/*
+#define C_ADCTAB_UMOTOR		0
+#define C_ADCTAB_IMOTOR		1
+#define C_ADCTAB_UBRAKE		2
+#define C_ADCTAB_IBRAKE		3
+*/
 #define C_ADCTAB_UMOTOR		0
 #define C_ADCTAB_IMOTOR		1
 #define C_ADCTAB_UBRAKE		2

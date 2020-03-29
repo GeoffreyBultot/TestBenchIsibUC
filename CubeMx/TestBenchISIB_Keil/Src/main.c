@@ -101,22 +101,22 @@ void Refresh_TM()
 float K = 100;		//Gain proportionnel
 
 
-float C = 136.0;//136		//Consigne
+float C = 0.0;//136		//Consigne
 
 #define MAX_PWM 0xfff-10//65535	//Vitesse max robot
 #define H_PI 0.5		//Periode ech en mS
 float Kp_PI= 20.0;		//Gain proportionnel
-float Ki_PI= 0.5;		//Gain proportionnel
+float Ki_PI= 1.5;		//Gain proportionnel
 
 #define B0 Kp_PI*(H_PI/(2*Ki_PI)+1)
 #define B1 Kp_PI*(H_PI/(2*Ki_PI)-1)
 
 float E_before_PI = 0;	//Erreur précedente
-
+float E = 0.0;	//Erreur
 void PI_Loop_Motor()
 {
 	float M = 0.0;
-	float E = 0.0;	//Erreur
+	
 	float u = 0.0;	
 	
 	M = Table_Tm_Reg[C_TM_U_MOT];//Mesure
@@ -128,16 +128,16 @@ void PI_Loop_Motor()
 	
 	if(u>MAX_PWM)		//commande est trop grande 
 	{//PWM max
-		htim3.Instance->CCR1 = MAX_PWM;
+		htim3.Instance->CCR2 = MAX_PWM;
 	}
 	else if(u<0)
 	{
-		htim3.Instance->CCR1 = 0;//MAX_PWM+u;
+		htim3.Instance->CCR2 = 0;//MAX_PWM+u;
 	}
 	else
 	{//Si on calcule une plage de vitesse acceptable, on donne
 	 //Cette vitesse au moteur.
-		htim3.Instance->CCR1 = u;
+		htim3.Instance->CCR2 = u;
 	}
 }
 
@@ -320,12 +320,12 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	
 	htim3.Instance->CCR1 = 0; //50% duty cycle
-	htim3.Instance->CCR2 = 0; //25% duty cycle
+	htim3.Instance->CCR2 = 00; //25% duty cycle
 	
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); //Start the PWM
 	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); //Start the PWM
 	
-	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC_buffer, 6);
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADC_buffer, 4);
 	
 	HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 	HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
@@ -344,13 +344,13 @@ int main(void)
 	while (1)
   {		
 		Refresh_TM();
-		get_ATMega_Infos();
+		//get_ATMega_Infos();
 		if (Is_New_Command_Received())
 		{
 			/** - Call TC Dispatcher to treat the command, with associated Parameter */
 			TC_Dispatcher(Table_Tc_Reg[C_TC_CMD_ID], Table_Tc_Reg[C_TC_PARAM_1_ID],Table_Tc_Reg[C_TC_PARAM_2_ID]);
 		}
-		
+		PI_Loop_Motor();
     /* USER CODE END WHILE */
 		
     /* USER CODE BEGIN 3 */

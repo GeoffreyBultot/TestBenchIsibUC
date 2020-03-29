@@ -1,10 +1,10 @@
 Dependencies for Project 'TestBenchISIB_Keil', Target 'TestBenchISIB_Keil': (DO NOT MODIFY !)
 F (startup_stm32f103xb.s)(0x5E7084AD)(--cpu Cortex-M3 --pd "__EVAL SETA 1" -g --apcs=interwork --pd "__MICROLIB SETA 1"-I.\RTE\_TestBenchISIB_Keil-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include--pd "__UVISION_VERSION SETA 526" --pd "_RTE_ SETA 1" --pd "STM32F10X_MD SETA 1"--list ..\..\..\..\..\..\..\..\..\..\..\startup_stm32f103xb.lst --xref -o testbenchisib_keil\startup_stm32f103xb.o --depend testbenchisib_keil\startup_stm32f103xb.d)
 F (..\Src\Register.c)(0x5E5806FA)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include --C99-I.\RTE\_TestBenchISIB_Keil-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o testbenchisib_keil\register.o --omf_browse testbenchisib_keil\register.crf --depend testbenchisib_keil\register.d)
-I (..\Src\Register.h)(0x5E7002A1)
+I (..\Src\Register.h)(0x5E80897C)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x599F3DAE)
 I (..\Src\Module_Defines.h)(0x5E590A63)
-F (../Src/main.c)(0x5E70B877)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include --C99-I.\RTE\_TestBenchISIB_Keil-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o testbenchisib_keil\main.o --omf_browse testbenchisib_keil\main.crf --depend testbenchisib_keil\main.d)
+F (../Src/main.c)(0x5E808D0A)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include --C99-I.\RTE\_TestBenchISIB_Keil-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o testbenchisib_keil\main.o --omf_browse testbenchisib_keil\main.crf --depend testbenchisib_keil\main.d)
 I (../Inc/main.h)(0x5E7084A9)
 I (../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h)(0x5E4D94C6)
 I (../Inc/stm32f1xx_hal_conf.h)(0x5E7084A9)
@@ -48,7 +48,7 @@ I (../Inc/usart.h)(0x5E7084A8)
 I (../Inc/usb.h)(0x5E7084A8)
 I (../Inc/gpio.h)(0x5E7084A4)
 I (../Src/types.h)(0x5E580290)
-I (../Src/Register.h)(0x5E7002A1)
+I (../Src/Register.h)(0x5E80897C)
 I (../Src/Module_Defines.h)(0x5E590A63)
 F (../Src/gpio.c)(0x5E7084A4)(-c --cpu Cortex-M3 -D__EVAL -D__MICROLIB -g -O0 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc -I ../Drivers/STM32F1xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F1xx/Include -I ../Drivers/CMSIS/Include --C99-I.\RTE\_TestBenchISIB_Keil-IC:\Keil_v5\ARM\PACK\ARM\CMSIS\5.4.0\CMSIS\Core\Include-IC:\Keil_v5\ARM\PACK\Keil\STM32F1xx_DFP\2.3.0\Device\Include-D__UVISION_VERSION="526" -D_RTE_ -DSTM32F10X_MD -DUSE_HAL_DRIVER -DSTM32F103xB-o testbenchisib_keil\gpio.o --omf_browse testbenchisib_keil\gpio.crf --depend testbenchisib_keil\gpio.d)
 I (../Inc/gpio.h)(0x5E7084A4)
