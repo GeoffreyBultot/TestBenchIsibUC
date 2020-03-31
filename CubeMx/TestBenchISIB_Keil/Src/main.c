@@ -105,8 +105,8 @@ float C = 0.0;//136		//Consigne
 
 #define MAX_PWM 0xfff-10//65535	//Vitesse max robot
 #define H_PI 0.5		//Periode ech en mS
-float Kp_PI= 20.0;		//Gain proportionnel
-float Ki_PI= 1.5;		//Gain proportionnel
+float Kp_PI= 25.0;		//Gain proportionnel
+float Ki_PI= 0.45;		//Gain proportionnel
 
 #define B0 Kp_PI*(H_PI/(2*Ki_PI)+1)
 #define B1 Kp_PI*(H_PI/(2*Ki_PI)-1)
@@ -126,7 +126,7 @@ void PI_Loop_Motor()
 	u = u + B0*E + B1*E_before_PI;	//Calcul de la commande
 	E_before_PI = E;
 	
-	if(u>MAX_PWM)		//commande est trop grande 
+	/*if(u>MAX_PWM)		//commande est trop grande 
 	{//PWM max
 		htim3.Instance->CCR2 = MAX_PWM;
 	}
@@ -138,10 +138,39 @@ void PI_Loop_Motor()
 	{//Si on calcule une plage de vitesse acceptable, on donne
 	 //Cette vitesse au moteur.
 		htim3.Instance->CCR2 = u;
+	}*/
+	int pwm = htim3.Instance->CCR2 ++;
+	if(E>20)
+	{
+		if(pwm < (0xfff-10))
+				pwm +=10;
 	}
+	else if(E<-20)
+	{
+		if(pwm > 10 )
+				pwm -=10;
+	}
+	else
+	{
+		
+		if(E<-3)
+		{
+			if(pwm > 0 )
+				pwm --;
+		}
+		else if(E >0)
+		{
+			if(pwm < (0xfff-10))
+				pwm ++;
+		}
+		else
+		{
+			//pwm = 0;//1424;//C/2;
+		}
+	}
+	htim3.Instance->CCR2 = pwm;
 }
 
-int tmp_counter_speed;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
@@ -202,7 +231,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 	if(hspi->Instance == SPI2)
 		HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 }
-
 /*
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -218,12 +246,13 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	
 }
 
+
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	HAL_UART_Receive_IT(&huart1,buffer_UART_RX,8);
 	//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
-}*/
-
+}
+*/
 void get_ATMega_Infos()
 {
 	HAL_UART_Transmit(&huart1,buffer_UART_TX,8,1);
@@ -312,9 +341,7 @@ int main(void)
   MX_I2C1_Init();
   MX_USB_PCD_Init();
   MX_TIM3_Init();
-  MX_TIM4_Init();
   MX_SPI2_Init();
-  MX_TIM1_Init();
   MX_TIM2_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
@@ -332,11 +359,13 @@ int main(void)
 	
 	//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
 	//HAL_UART_Receive_IT(&huart1,buffer_UART_RX,8);
-	//HAL_TIM_Base_Start_IT(&htim2);
+	HAL_TIM_Base_Start_IT(&htim2);
 	//HAL_TIM_Base_Init(&htim2);
 	
   /* USER CODE END 2 */
  
+ 
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
  
@@ -344,15 +373,15 @@ int main(void)
 	while (1)
   {		
 		Refresh_TM();
-		//get_ATMega_Infos();
+		get_ATMega_Infos();
 		if (Is_New_Command_Received())
 		{
 			/** - Call TC Dispatcher to treat the command, with associated Parameter */
 			TC_Dispatcher(Table_Tc_Reg[C_TC_CMD_ID], Table_Tc_Reg[C_TC_PARAM_1_ID],Table_Tc_Reg[C_TC_PARAM_2_ID]);
 		}
-		PI_Loop_Motor();
+		//PI_Loop_Motor();
     /* USER CODE END WHILE */
-		
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -376,7 +405,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -388,15 +417,15 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_ADC|RCC_PERIPHCLK_USB;
-  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV4;
-  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
+  PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
+  PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_PLL_DIV1_5;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     Error_Handler();
