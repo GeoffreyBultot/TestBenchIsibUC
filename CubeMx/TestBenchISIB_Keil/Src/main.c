@@ -55,8 +55,8 @@
 uint16_t ADC_buffer[4], adc[4], nmoyenne;
 uint32_t moyenne[4];
 
-uint8_t buffer_SPI_TX[8];
-uint8_t buffer_SPI_RX[8];
+uint8_t buffer_SPI_TX[6];
+uint8_t buffer_SPI_RX[6];
 
 
 uint8_t buffer_UART_TX[8] = {0xC5,0X80,0X80,0X80,0X80,0X80,0X80,0X80};
@@ -199,7 +199,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		nmoyenne = 0;
 	}
 }
-
+int buff_ValidRequest[6];
+int pos_validBuff=0;
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	uint16_t value;
@@ -224,6 +225,48 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 		
 		HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);	
 	}
+	
+	/*
+	if(hspi->Instance==SPI2)
+	{
+		if(pos_validBuff == 0)
+		{
+			if( (buffer_SPI_RX[0] == 0X80) || (buffer_SPI_RX[0] == 0X20) )
+			{
+				buff_ValidRequest[0] = buffer_SPI_RX[0];
+				pos_validBuff++;
+			}
+		}
+		else if(pos_validBuff < 6)
+		{	
+			buff_ValidRequest[pos_validBuff] = buffer_SPI_RX[0];
+			pos_validBuff++;
+		}
+		else
+		{
+			
+			if(buff_ValidRequest[0] == 0x80)
+			{
+				value = buff_ValidRequest[1];
+				buffer_SPI_TX[1] = Table_Tm_Reg[value];
+				buffer_SPI_TX[2] = Table_Tm_Reg[value]>>8;
+				HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);	
+			}
+			else if(buff_ValidRequest[0] == 0X20)
+			{*//** TELECOMMAND Table register ID */
+				
+			/*	Table_Tc_Reg[C_TC_CMD_COUNT_ID] = (1+Vi_Last_Cmd_Count);
+				Table_Tc_Reg[C_TC_CMD_ID] 		= (buff_ValidRequest [1]);
+				Table_Tc_Reg[C_TC_PARAM_1_ID] = (buff_ValidRequest[2]<<8) + buff_ValidRequest[3];
+				Table_Tc_Reg[C_TC_PARAM_2_ID] = (buff_ValidRequest[4]<<8) + buff_ValidRequest[5];
+				//TC DISPATCHER
+				
+			}
+			pos_validBuff = 0;
+		}
+		
+	}*/
+		
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
@@ -379,6 +422,8 @@ int main(void)
 			/** - Call TC Dispatcher to treat the command, with associated Parameter */
 			TC_Dispatcher(Table_Tc_Reg[C_TC_CMD_ID], Table_Tc_Reg[C_TC_PARAM_1_ID],Table_Tc_Reg[C_TC_PARAM_2_ID]);
 		}
+		//HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
+		//HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
 		//PI_Loop_Motor();
     /* USER CODE END WHILE */
 
