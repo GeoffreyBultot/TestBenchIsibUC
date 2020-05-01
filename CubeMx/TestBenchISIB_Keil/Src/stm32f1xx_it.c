@@ -280,11 +280,14 @@ void TIM3_IRQHandler(void)
 void SPI2_IRQHandler(void)
 {
   /* USER CODE BEGIN SPI2_IRQn 0 */
-
+	
   /* USER CODE END SPI2_IRQn 0 */
   HAL_SPI_IRQHandler(&hspi2);
   /* USER CODE BEGIN SPI2_IRQn 1 */
-
+if( ((hspi2.pRxBuffPtr)[0] == 0x80)||((hspi2.pRxBuffPtr)[0] == 0x20))
+	{
+		return;
+	}
   /* USER CODE END SPI2_IRQn 1 */
 }
 

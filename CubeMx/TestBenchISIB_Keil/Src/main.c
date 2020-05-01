@@ -38,10 +38,28 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+/** @brief Enum Type to define the Motor Regulation Loop Mode*/
+typedef enum
+{
+	E_MOT_REG_FACTOR_SPEED 		= 1,
+	E_MOT_REG_FACTOR_VOLTAGE	= 2,
+	E_MOT_REG_FACTOR_CURRENT 	= 3
+}T_Motor_Regulation_Factor;
+
+/** @brief Enum Type to define the Regulation Mode*/
+typedef enum
+{
+	E_BRAKE_REG_FACTOR_TORQUE		= 1,
+	E_BRAKE_REG_FACTOR_VOLTAGE	= 2,
+	E_BRAKE_REG_FACTOR_CURRENT 	= 3
+}T_Brake_Regulation_Factor;
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MAX_PWM 0xfff-10//65535	//Vitesse max robot
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -71,7 +89,10 @@ uint16_t Vi_Last_Cmd_Count;
 /** @brief TELECOMMAND Table register */
 __attribute__((section (".registers"))) volatile uint16_t Table_Tc_Reg[C_TC_TABLE_SIZE];
 
-//uint16_t Table_Tc_Reg[C_TC_TABLE_SIZE];
+
+unsigned char regulation_Motor_ON = 0;
+unsigned char regulation_Brake_ON = 0;
+			
 
 /* USER CODE END PV */
 
@@ -83,100 +104,120 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int counter_speed;
-int couple_measure;
 void Refresh_TM()
 {
-	Table_Tm_Reg[C_TM_CR_MOT] 	= 	couple_measure;//1000;//adc[C_ADCTAB_LOADCEL] - adc[C_ADCTAB_165REF];	
+	//Table_Tm_Reg[C_TM_CR_MOT] 	= 	1;//couple_measure;//1000;//adc[C_ADCTAB_LOADCEL] - adc[C_ADCTAB_165REF];	
 	Table_Tm_Reg[C_TM_U_MOT] 		= 	adc[C_ADCTAB_UMOTOR];
 	Table_Tm_Reg[C_TM_I_MOT] 		= 	adc[C_ADCTAB_IMOTOR];
 	Table_Tm_Reg[C_TM_U_BRAKE] 	= 	adc[C_ADCTAB_UBRAKE];
 	Table_Tm_Reg[C_TM_I_BRAKE] 	= 	adc[C_ADCTAB_IBRAKE];
-	Table_Tm_Reg[C_TM_SP_MOT]		=		counter_speed;
+	//Table_Tm_Reg[C_TM_SP_MOT]		=		1;//counter_speed;
+	Table_Tm_Reg[C_TM_PWM_MOT]		=		htim3.Instance->CCR2;//counter_speed;
+	Table_Tm_Reg[C_TM_PWM_BRAKE]		=		htim3.Instance->CCR1;//counter_speed;
 }
 
-#define MAX_PWM 0xfff-10//65535	//Vitesse max robot
-
-#define H 75		//Fréquence ech en mS
-float K = 100;		//Gain proportionnel
-
-
-float C = 0.0;//136		//Consigne
-
-#define MAX_PWM 0xfff-10//65535	//Vitesse max robot
-#define H_PI 0.5		//Periode ech en mS
-float Kp_PI= 25.0;		//Gain proportionnel
-float Ki_PI= 0.45;		//Gain proportionnel
-
-#define B0 Kp_PI*(H_PI/(2*Ki_PI)+1)
-#define B1 Kp_PI*(H_PI/(2*Ki_PI)-1)
-
-float E_before_PI = 0;	//Erreur précedente
-float E = 0.0;	//Erreur
-void PI_Loop_Motor()
+uint16_t *ptr_Measure_Motor = NULL;
+uint16_t *ptr_Measure_Brake = NULL;
+uint16_t C_Motor = 0.0;//136		//Consigne
+uint16_t C_Brake = 0.0;
+void Regulation_Loop_Motor()
 {
-	float M = 0.0;
-	
-	float u = 0.0;	
-	
-	M = Table_Tm_Reg[C_TM_U_MOT];//Mesure
-	
-	E=C-M;			//Calcul de l'erreur
-	
-	u = u + B0*E + B1*E_before_PI;	//Calcul de la commande
-	E_before_PI = E;
-	
-	/*if(u>MAX_PWM)		//commande est trop grande 
-	{//PWM max
-		htim3.Instance->CCR2 = MAX_PWM;
-	}
-	else if(u<0)
+	int E = 0.0;	//Erreur
+	int M = 0.0;
+	if(ptr_Measure_Motor == NULL)
 	{
-		htim3.Instance->CCR2 = 0;//MAX_PWM+u;
-	}
-	else
-	{//Si on calcule une plage de vitesse acceptable, on donne
-	 //Cette vitesse au moteur.
-		htim3.Instance->CCR2 = u;
-	}*/
-	int pwm = htim3.Instance->CCR2 ++;
-	if(E>20)
-	{
-		if(pwm < (0xfff-10))
-				pwm +=10;
-	}
-	else if(E<-20)
-	{
-		if(pwm > 10 )
-				pwm -=10;
+		C_Motor = 0;
+		htim3.Instance->CCR2 = 0;
 	}
 	else
 	{
+		M = *(ptr_Measure_Motor);//Table_Tm_Reg[C_TM_U_MOT];//Mesure
+		E = C_Motor-M;
 		
-		if(E<-3)
-		{
-			if(pwm > 0 )
-				pwm --;
-		}
-		else if(E >0)
+		int pwm = htim3.Instance->CCR2;
+		if(E>20)
 		{
 			if(pwm < (0xfff-10))
-				pwm ++;
+					pwm +=10;
+		}
+		else if(E<-20)
+		{
+			if(pwm > 10 )
+					pwm -=10;
 		}
 		else
 		{
-			//pwm = 0;//1424;//C/2;
+			if(E<-2)
+			{
+				if(pwm > 0 )
+					pwm --;
+			}
+			else if(E >0)
+			{
+				if(pwm < (0xfff-10))
+					pwm ++;
+			}
+			else
+			{
+				//pwm = 0;//1424;//C/2;
+			}
 		}
+		htim3.Instance->CCR2 = pwm;
 	}
-	htim3.Instance->CCR2 = pwm;
 }
 
+void Regulation_Loop_Brake(void)
+{
+	int E = 0;	//Erreur
+	int M = 0;
+	if(ptr_Measure_Brake == NULL)
+	{
+		C_Brake = 0;
+		htim3.Instance->CCR1 = 0;
+	}
+	else
+	{
+		M = *(ptr_Measure_Brake);//Table_Tm_Reg[C_TM_U_BRAKE];//Mesure
+		E = C_Brake-M;
+		
+		int pwm = htim3.Instance->CCR1;
+		if(E>20)
+		{
+			if(pwm < (0xfff-10))
+					pwm +=10;
+		}
+		else if(E<-20)
+		{
+			if(pwm > 10 )
+					pwm -=10;
+		}
+		else
+		{
+			if(E<-2)
+			{
+				if(pwm > 0 )
+					pwm --;
+			}
+			else if(E >0)
+			{
+				if(pwm < (0xfff-10))
+					pwm ++;
+			}
+			else
+			{
+				//pwm = 0;//1424;//C/2;
+			}
+		}
+		htim3.Instance->CCR1 = pwm;
+	}
+}
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	if(htim->Instance == TIM2)
 	{
-		PI_Loop_Motor();
+		Regulation_Loop_Motor();
+		Regulation_Loop_Brake();
 	}
 }
 
@@ -199,8 +240,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		nmoyenne = 0;
 	}
 }
-int buff_ValidRequest[6];
-int pos_validBuff=0;
+
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
 	uint16_t value;
@@ -214,59 +254,20 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 			buffer_SPI_TX[2] = Table_Tm_Reg[value]>>8;
 		}
 		else if(type == 0X20)
-		{/** TELECOMMAND Table register ID */
-			
+		{
 			Table_Tc_Reg[C_TC_CMD_COUNT_ID] = (1+Vi_Last_Cmd_Count);
 			Table_Tc_Reg[C_TC_CMD_ID] 		= (buffer_SPI_RX [1]);
 			Table_Tc_Reg[C_TC_PARAM_1_ID] = (buffer_SPI_RX[2]<<8) + buffer_SPI_RX[3];
 			Table_Tc_Reg[C_TC_PARAM_2_ID] = (buffer_SPI_RX[4]<<8) + buffer_SPI_RX[5];
 			//TC DISPATCHER
 		}
-		
-		HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);	
-	}
-	
-	/*
-	if(hspi->Instance==SPI2)
-	{
-		if(pos_validBuff == 0)
-		{
-			if( (buffer_SPI_RX[0] == 0X80) || (buffer_SPI_RX[0] == 0X20) )
-			{
-				buff_ValidRequest[0] = buffer_SPI_RX[0];
-				pos_validBuff++;
-			}
-		}
-		else if(pos_validBuff < 6)
-		{	
-			buff_ValidRequest[pos_validBuff] = buffer_SPI_RX[0];
-			pos_validBuff++;
-		}
 		else
 		{
-			
-			if(buff_ValidRequest[0] == 0x80)
-			{
-				value = buff_ValidRequest[1];
-				buffer_SPI_TX[1] = Table_Tm_Reg[value];
-				buffer_SPI_TX[2] = Table_Tm_Reg[value]>>8;
-				HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);	
-			}
-			else if(buff_ValidRequest[0] == 0X20)
-			{*//** TELECOMMAND Table register ID */
-				
-			/*	Table_Tc_Reg[C_TC_CMD_COUNT_ID] = (1+Vi_Last_Cmd_Count);
-				Table_Tc_Reg[C_TC_CMD_ID] 		= (buff_ValidRequest [1]);
-				Table_Tc_Reg[C_TC_PARAM_1_ID] = (buff_ValidRequest[2]<<8) + buff_ValidRequest[3];
-				Table_Tc_Reg[C_TC_PARAM_2_ID] = (buff_ValidRequest[4]<<8) + buff_ValidRequest[5];
-				//TC DISPATCHER
-				
-			}
-			pos_validBuff = 0;
+			//HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 1);
+			//HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 1);
 		}
-		
-	}*/
-		
+		HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
+	}
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
@@ -274,41 +275,32 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi)
 	if(hspi->Instance == SPI2)
 		HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 }
-/*
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-	if( (buffer_UART_RX[0] == 0XC5) && (buffer_UART_RX[1] == 0X08) && (buffer_UART_RX[7] == 0XC5) )
-	{
-		couple_measure 	=	(buffer_UART_RX[2])<<8;
-		couple_measure += (buffer_UART_RX[3]);
-		counter_speed 	= (buffer_UART_RX[4])<<16;
-		counter_speed  += (buffer_UART_RX[5])<<8;
-		counter_speed  += (buffer_UART_RX[6]);
-		HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
-	}
-	
-}
-
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	HAL_UART_Receive_IT(&huart1,buffer_UART_RX,8);
 	//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
 }
-*/
+
 void get_ATMega_Infos()
 {
+	int couple_measure,counter_speed;
 	HAL_UART_Transmit(&huart1,buffer_UART_TX,8,1);
 	HAL_UART_Receive(&huart1,buffer_UART_RX,8,20);
 	if( (buffer_UART_RX[0] == 0XC5) && (buffer_UART_RX[1] == 0X08) && (buffer_UART_RX[7] == 0XC5) )
 	{
+		
 		couple_measure 	=	(buffer_UART_RX[2])<<8;
 		couple_measure += (buffer_UART_RX[3]);
 		counter_speed 	= (buffer_UART_RX[4])<<16;
 		counter_speed  += (buffer_UART_RX[5])<<8;
 		counter_speed  += (buffer_UART_RX[6]);
 		//HAL_UART_Transmit_IT(&huart1,buffer_UART_TX,8);
+		
+		Table_Tm_Reg[C_TM_SP_MOT] = counter_speed;
+		Table_Tm_Reg[C_TM_CR_MOT] = couple_measure;
 	}
+	
 }
 
 uint8_t Is_New_Command_Received(void)
@@ -331,22 +323,62 @@ uint8_t Is_New_Command_Received(void)
 
 	return Vb_Command_Received;
 }
-
+/*
+	Table_Tm_Reg[C_TM_U_MOT] 		= 	adc[C_ADCTAB_UMOTOR];
+	Table_Tm_Reg[C_TM_I_MOT] 		= 	adc[C_ADCTAB_IMOTOR];
+	Table_Tm_Reg[C_TM_U_BRAKE] 	= 	adc[C_ADCTAB_UBRAKE];
+	Table_Tm_Reg[C_TM_I_BRAKE] 	= 	adc[C_ADCTAB_IBRAKE];
+	//Table_Tm_Reg[C_TM_SP_MOT]		=		1;//counter_speed;
+	Table_Tm_Reg[C_TM_PWM_MOT]		=		1;//counter_speed;
+	Table_Tm_Reg[C_TM_PWM_BRAKE]		=		1;//counter_speed;
+*/
 void TC_Dispatcher(const uint8_t p_Cmd_Id, const uint16_t p_Param1, const uint16_t p_Param2)
 {
 	switch(p_Cmd_Id)
 	{
-		case C_TC_MAN_SET_U_MOT :
-			C = p_Param1;
+		case C_TC_SET_MODE :
 			break;
-		case C_TC_MAN_SET_I_MOT :
-			C = p_Param1;
+		
+		case C_TC_SET_U_MOT :
+			ptr_Measure_Motor = &(Table_Tm_Reg[C_TM_U_MOT]);
+			C_Motor = p_Param1;
 			break;
-		case C_TC_MAN_SET_SP_MOT :
-			C = p_Param1;
+		
+		case C_TC_SET_I_MOT :
+			ptr_Measure_Motor = &(Table_Tm_Reg[C_TM_I_MOT]);
+			C_Motor = p_Param1;
 			break;
-		case C_TC_MAN_SET_CR_MOT :
-			C = p_Param1;
+		
+		case C_TC_SET_SP_MOT :
+			ptr_Measure_Motor = &(Table_Tm_Reg[C_TM_SP_MOT]);
+			C_Motor = p_Param1;
+			break;
+		
+		case C_TC_SET_PWM_MOT :
+			ptr_Measure_Motor = &(Table_Tm_Reg[C_TM_PWM_MOT]);
+			C_Motor = p_Param1;
+			htim3.Instance->CCR2 = p_Param1;
+			break;
+		
+		case C_TC_SET_CR :
+			ptr_Measure_Brake = &(Table_Tm_Reg[C_TM_CR_MOT]);
+			C_Motor = p_Param1;
+			break;
+		
+		case C_TC_SET_U_BRAKE :
+			ptr_Measure_Brake = &(Table_Tm_Reg[C_TM_U_BRAKE]);
+			C_Brake = p_Param1;
+			break;
+		
+		case C_TC_SET_I_BRAKE :
+			ptr_Measure_Brake = &(Table_Tm_Reg[C_TM_I_BRAKE]);
+			C_Brake = p_Param1;
+			break;
+		 
+		case C_TC_SET_PWM_BRAKE :
+			ptr_Measure_Brake = &(Table_Tm_Reg[C_TM_PWM_BRAKE]);
+			C_Brake = p_Param1;
+			htim3.Instance->CCR2 = p_Param1;
 			break;
 	}
 }
@@ -422,7 +454,8 @@ int main(void)
 			/** - Call TC Dispatcher to treat the command, with associated Parameter */
 			TC_Dispatcher(Table_Tc_Reg[C_TC_CMD_ID], Table_Tc_Reg[C_TC_PARAM_1_ID],Table_Tc_Reg[C_TC_PARAM_2_ID]);
 		}
-		//HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
+		
+		HAL_SPI_Receive_IT(&hspi2, buffer_SPI_RX, 6);
 		//HAL_SPI_Transmit_IT(&hspi2, buffer_SPI_TX, 6);
 		//PI_Loop_Motor();
     /* USER CODE END WHILE */

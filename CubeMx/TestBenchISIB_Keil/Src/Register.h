@@ -38,17 +38,20 @@
 #define C_TC_PARAM_2_ID			3
 
 /** TELECOMMAND Table register ID */
-#define C_TC_SET_MODE				0x00
-#define C_TC_MAN_SET_U_MOT  0x01
-#define C_TC_MAN_SET_I_MOT  0x02
-#define C_TC_MAN_SET_SP_MOT 0x03
-#define C_TC_MAN_SET_CR_MOT 0x04
+#define C_TC_SET_MODE			0x00
+#define C_TC_SET_U_MOT  	0x01
+#define C_TC_SET_I_MOT  	0x02
+#define C_TC_SET_SP_MOT 	0x03
+#define C_TC_SET_PWM_MOT	0x04
+#define C_TC_SET_CR				0x05
+#define C_TC_SET_U_BRAKE	0x06
+#define C_TC_SET_I_BRAKE	0x07
+#define C_TC_SET_PWM_BRAKE	0x08
 
 /** Number of Command of each Type, HEMPT-PPU -BB-SRS-COM-012 */
 #define C_LAST_P_CMD_ID		31
 #define C_LAST_C_CMD_ID		2
 #define C_LAST_R_CMD_ID		6
-
 
 /***************************************************************************
 * Variables declarations
@@ -62,7 +65,16 @@ extern volatile uint16_t Table_Tc_Reg[C_TC_TABLE_SIZE];
 /***************************************************************************
 * Type definitions
 ***************************************************************************/
-/** @brief Enum Type to define the PPU_MODE */
+/** @brief Enum Type to define the Bench Mode*/
+typedef enum
+{
+	E_MODE_STANDBY		= 0,
+	E_MODE_REMOTE 		= 1,
+	E_MODE_AUTOMATIC 	= 2 
+}T_Bench_Mode;
+
+
+
 
 
 /** @brief Parameter information */
